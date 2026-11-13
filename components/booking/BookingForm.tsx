@@ -7,61 +7,82 @@ import { Staff } from "@/types/staff";
 
 // BookingContextインポート
 import { BookingProvider, TOTAL_STEPS, canGoNext, useBooking } from "@/contexts/BookingContext";
+import BookingNavigation from "@/components/booking/BookingNavigation"
+import MenuStep from "@/components/booking/MenuStep";
+import DateTimeStep from "@/components/booking/DateTimeStep";
+import StaffStep from "@/components/booking/StaffStep";
+import ConfirmStep from "@/components/booking/ConfirmStep";
 
 // Props の型定義
 type BookingFormProps = {
-    shop: Shop
-    menus: Menu[]
-    staffs: Staff[]
+  shop: Shop
+  menus: Menu[]
+  staffs: Staff[]
+  candidateDates: string[]
+  timeSlots: string[]
 }
 
-export default function BookingForm({ shop, menus, staffs }: BookingFormProps) {
-    return (
-        <BookingProvider shopId={shop.id}>
-            {/* ここにかかれたコンポーネントのみが、データを利用できます。 */}
-            <BookingFlow />
-        </BookingProvider>
-    )
+export default function BookingForm({ shop, menus, staffs, candidateDates, timeSlots }: BookingFormProps) {
+  return (
+    <BookingProvider shopId={shop.id}>
+      <BookingFlow menus={menus} staffs={staffs} candidateDates={candidateDates} timeSlots={timeSlots} />
+    </BookingProvider>
+  )
 }
 
-function BookingFlow() {
+type BookingFlowProps = Omit<BookingFormProps, "shop">
+// type BookingFlowProps = Pick<BookingFormProps, "menus" | "staffs" | "candidateDates" | "timeSlots">
+// type BookingFlowProps = {
+//   menus: Menu[]
+//   staffs: Staff[]
+//   candidateDates: string[]
+//   timeSlots: string[]
+// }
+
+function BookingFlow({ menus, staffs, candidateDates, timeSlots }: BookingFlowProps) {
   // useContext を使って BookingContext の状態 state と dispatch を取得
   const { state, dispatch } = useBooking()
 
   return (
     <div>
-      {state.step === 1 && <div>STEP 1: メニューを選ぶ</div>}
-      {state.step === 2 && <div>STEP 2: 日付・時間を選ぶ</div>}
-      {state.step === 3 && <div>STEP 3: スタッフを選ぶ（任意）</div>}
-      {state.step === 4 && <div>STEP 4: 確認して予約する</div>}
+      {
+        state.step === 1 &&
+        <MenuStep
+          menus={menus}
+          selectedMenuId={state.menuId}
+          onSelect={(menuId) => dispatch({ type: "select-menu", menuId })}
+        />
+      }
+      {state.step === 2 && (
+        <DateTimeStep
+          candidateDates={candidateDates}
+          timeSlots={timeSlots}
+          selectedDate={state.date}
+          selectedTime={state.time}
+          onSelectDate={(date) => dispatch({ type: "select-date", date })}
+          onSelectTime={(time) => dispatch({ type: "select-time", time })}
+        />
+      )}
+      {state.step === 3 && (
+        <StaffStep
+          staffs={staffs}
+          selectedStaffId={state.staffId}
+          onSelect={(staffId) => dispatch({ type: "select-staff", staffId })}
+        />
+      )}
+      {state.step === 4 && (
+        <ConfirmStep
+          notes={state.notes}
+          onChangeNotes={(notes) => dispatch({ type: "change-notes", notes })}
+        />
+      )}
 
-      <div className="my-4 flex justify-center gap-3">
-        <button
-          type="button"
-          onClick={() => dispatch({ type: "prev" })}
-          disabled={state.step === 1}
-          className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-medium disabled:opacity-40"
-        >
-          戻る
-        </button>
-        {state.step < TOTAL_STEPS ? (
-          <button
-            type="button"
-            onClick={() => dispatch({ type: "next" })}
-            disabled={!canGoNext(state)}
-            className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-medium disabled:opacity-40"
-          >
-            次へ
-          </button>
-        ) :
-          <button
-            type="button"
-            className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-medium disabled:opacity-40"
-          >
-            この内容で予約する
-          </button>
-        }
-      </div>
+      <BookingNavigation
+        step={state.step}
+        canGoNext={canGoNext(state)}
+        onPrev={() => dispatch({ type: "prev" })}
+        onNext={() => dispatch({ type: "next" })}
+      />
     </div>
   )
 }
