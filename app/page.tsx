@@ -2,7 +2,7 @@ import SectionHeading from "@/components/SectionHeading";
 import ShopCard from "@/components/ShopCard"
 import { getShops } from "@/lib/services/shops";
 // Firebase の認証情報を使用するためのインポート
-import { auth } from "@/lib/firebase/client"
+//import { auth } from "@/lib/firebase/client"
 
 export default async function Home() {
   // Firebase の認証情報を使用してプロジェクトIDを取得してコンソール表示
